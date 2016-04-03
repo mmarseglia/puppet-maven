@@ -36,42 +36,43 @@ class maven::maven(
     #password => '',
   } ) {
 
-  $archive = "/tmp/apache-maven-${version}-bin.tar.gz"
+$dirname = "apache-maven-${version}"
+$filename = "apache-maven-${version}-bin.tar.gz"
+$install_path = "/opt/${dirname}"
 
-  # Avoid redownloading when tmp tar.gz is deleted
-  if $::maven_version != $version {
+file { $install_path :
+  ensure  => directory,
+  mode    => '0755',
+}
 
-    # we could use puppet-stdlib function !empty(repo) but avoiding adding a new
-    # dependency for now
-    if "x${repo['url']}x" != 'xx' {
-      wget::authfetch { 'fetch-maven':
-        source      => "${repo['url']}/org/apache/maven/apache-maven/${version}/apache-maven-${version}-bin.tar.gz",
-        destination => $archive,
-        user        => $repo['username'],
-        password    => $repo['password'],
-        before      => Exec['maven-untar'],
-      }
-    } else {
-      wget::fetch { 'fetch-maven':
-        source      => "http://archive.apache.org/dist/maven/maven-3/${version}/binaries/apache-maven-${version}-bin.tar.gz",
-        destination => $archive,
-        before      => Exec['maven-untar'],
-      }
-    }
-    exec { 'maven-untar':
-      command => "tar xf /tmp/apache-maven-${version}-bin.tar.gz",
-      cwd     => '/opt',
-      creates => "/opt/apache-maven-${version}",
-      path    => ['/bin','/usr/bin'],
-    }
-
-    file { '/usr/bin/mvn':
-      ensure  => link,
-      target  => "/opt/apache-maven-${version}/bin/mvn",
-      require => Exec['maven-untar'],
-    } ->
-    file { '/usr/local/bin/mvn':
-      ensure  => absent,
-    }
+if empty($repo) {
+  archive { $filename :
+    path         => "/tmp/${filename}",
+    source       => "http://archive.apache.org/dist/maven/maven-3/${version}/binaries/${filename}",
+    extract      => true,
+    extract_path => '/opt',
+    creates      => "${install_path}/bin",
+    cleanup      => true,
+    require      => File[$install_path],
   }
+} else {
+  archive { $filename :
+    path         => "/tmp/${filename}",
+    source       => $repo['url'],
+    username     => $repo['username'],
+    password     => $repo['password'],
+    extract      => true,
+    extract_path => '/opt',
+    creates      => "${install_path}/bin",
+    cleanup      => true,
+    require      => File[$install_path],
+  }
+}
+
+file { '/usr/bin/mvn':
+  ensure  => link,
+  target  => "/opt/apache-maven-${version}/bin/mvn",
+  require => Archive[$filename],
+}
+
 }

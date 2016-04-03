@@ -10,7 +10,7 @@
   "description": "A Puppet module to download artifacts from Maven repositories",
   "dependencies": [
     {
-      "name": "maestrodev/wget",
+      "name": "puppetlabs/stdlib",
       "version_requirement": ">=1.0.0"
     }
   ],

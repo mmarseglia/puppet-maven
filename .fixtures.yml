@@ -1,3 +1,5 @@
 fixtures:
   symlinks:
     maven: "#{source_dir}"
+  repositories:
+    archive: 'https://github.com/voxpupuli/puppet-archive'
